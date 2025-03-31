@@ -18,7 +18,6 @@ class CLIPDataset(Dataset):
 
     def load_dataset(self, k_shot):
 
-        # ? what is types for 
         (train_img_tot_paths, train_gt_tot_paths, train_tot_labels, train_tot_types), \
         (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types) = self.load_function(self.category,
                                                                                                       k_shot)

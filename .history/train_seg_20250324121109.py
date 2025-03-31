@@ -79,11 +79,8 @@ def fit(model,
             mean_ad_handle = torch.mean(F.normalize(abnormal_text_features_handle, dim=-1), dim=0)
             mean_ad_learned = torch.mean(F.normalize(abnormal_text_features_learned, dim=-1), dim=0)
 
-            # align LAP and MAP as squared l2 norm
             loss_match_abnormal = (mean_ad_handle - mean_ad_learned).norm(dim=0) ** 2.0
 
-            # extract 3rd and 8th layers' feature map to balance global and local information
-            # the last layer isn't used since it's too abstract, good for classification but not for segmentation
             _, feature_map, _, _ = model.encode_image(data)
 
             # compute v2t loss and triplet loss
@@ -94,7 +91,6 @@ def fit(model,
             abnormal_text_features_ahchor = abnormal_text_features_ahchor / abnormal_text_features_ahchor.norm(dim=-1, keepdim=True)
             abnormal_text_features = abnormal_text_features / abnormal_text_features.norm(dim=-1, keepdim=True)
 
-            # compute similarity score
             l_pos = torch.einsum('nic,cj->nij', feature_map, normal_text_features_ahchor.transpose(0, 1))
             l_neg_v2t = torch.einsum('nic,cj->nij', feature_map, abnormal_text_features.transpose(0, 1))
 
@@ -102,17 +98,14 @@ def fit(model,
                 logit_scale = model.model.logit_scale.half()
             else:
                 logit_scale = model.model.logit_scalef
-            
+
             logits_v2t = torch.cat([l_pos, l_neg_v2t], dim=-1) * logit_scale
 
             target_v2t = torch.zeros([logits_v2t.shape[0], logits_v2t.shape[1]], dtype=torch.long).to(device)
 
-            # CLIP and Prompt learning loss
             loss_v2t = criterion(logits_v2t.transpose(1, 2), target_v2t)
 
-            # EAM loss
             trip_loss = criterion_tip(feature_map, normal_text_features_ahchor, abnormal_text_features_ahchor)
-
             loss = loss_v2t + trip_loss + loss_match_abnormal * args.lambda1
 
             loss.backward()
@@ -208,8 +201,8 @@ def str2bool(v):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Anomaly detection')
-    parser.add_argument('--dataset', type=str, default='brats', choices=['mvtec', 'visa', 'brats'])
-    parser.add_argument('--class_name', type=str, default='t2w')
+    parser.add_argument('--dataset', type=str, default='mvtec', choices=['mvtec', 'visa'])
+    parser.add_argument('--class_name', type=str, default='carpet')
 
     parser.add_argument('--img-resize', type=int, default=240)
     parser.add_argument('--img-cropsize', type=int, default=240)
@@ -253,6 +246,7 @@ def get_args():
     args = parser.parse_args()
 
     return args
+
 
 if __name__ == '__main__':
     import os

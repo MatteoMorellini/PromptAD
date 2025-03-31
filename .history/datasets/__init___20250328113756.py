@@ -14,7 +14,7 @@ std_train = [0.26862954, 0.26130258, 0.27577711]
 load_function_dict = {
     'mvtec': load_mvtec,
     'visa': load_visa,
-    'brats': load_brats
+    'load_brats': load_brats
 }
 
 dataset_classes = {

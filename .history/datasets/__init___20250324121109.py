@@ -5,22 +5,19 @@ from loguru import logger
 from .dataset import CLIPDataset
 from .mvtec import load_mvtec, mvtec_classes
 from .visa import load_visa, visa_classes
-from .brats import load_brats, brats_classes
 
-# TODO: since brats is greyscale image, mean and std should be calculated?
+
 mean_train = [0.48145466, 0.4578275, 0.40821073]
 std_train = [0.26862954, 0.26130258, 0.27577711]
 
 load_function_dict = {
     'mvtec': load_mvtec,
     'visa': load_visa,
-    'brats': load_brats
 }
 
 dataset_classes = {
     'mvtec': mvtec_classes,
     'visa': visa_classes,
-    'brats': brats_classes
 }
 
 def denormalization(x):

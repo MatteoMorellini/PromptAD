@@ -166,7 +166,7 @@ def main(args):
 
     if kwargs['seed'] is None:
         kwargs['seed'] = 111
-
+    print('ehi')
     setup_seed(kwargs['seed'])
 
     if kwargs['use_cpu'] == 0:
@@ -254,9 +254,10 @@ def get_args():
 
     return args
 
+
 if __name__ == '__main__':
     import os
-
+    print('ehiiiii')
     args = get_args()
     os.environ['CURL_CA_BUNDLE'] = ''
     os.environ['CUDA_VISIBLE_DEVICES'] = f"{args.gpu_id}"
