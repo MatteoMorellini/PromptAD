@@ -174,7 +174,7 @@ class PromptAD(torch.nn.Module):
         super(PromptAD, self).__init__()
         
         self.shot = kwargs['k_shot']
-        self.n_slices = kwargs['n_slices']
+        self.distance_per_slice = kwargs['distance_per_slice']
 
         self.out_size_h = out_size_h
         self.out_size_w = out_size_w
@@ -219,11 +219,11 @@ class PromptAD(torch.nn.Module):
         self.grid_size = model.visual.grid_size
         self.visual_gallery = None
 
-        visual_gallery1 = torch.zeros((self.shot*self.n_slices*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
-        print(self.shot, self.n_slices, self.grid_size[0], self.grid_size[1], self.model.visual.embed_dim)
+        slice_multiplier = 1 if self.distance_per_slice == 0 else (155//self.distance_per_slice+1)
+        visual_gallery1 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery1", visual_gallery1)
 
-        visual_gallery2 = torch.zeros((self.shot*self.n_slices*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        visual_gallery2 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery2", visual_gallery2)
 
         text_features = torch.zeros((2, self.model.visual.output_dim))

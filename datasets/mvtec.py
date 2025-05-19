@@ -10,7 +10,7 @@ mvtec_classes = ['carpet', 'grid', 'leather', 'tile', 'wood',
 MVTEC2D_DIR = './anomaly_detection/mvtec_anomaly_detection'
 
 
-def load_mvtec(category, k_shot):
+def load_mvtec(category, k_shot, *args):
     def load_phase(root_path, gt_path):
         img_tot_paths = []
         gt_tot_paths = []

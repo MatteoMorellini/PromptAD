@@ -9,7 +9,7 @@ visa_classes = ['candle', 'capsules', 'cashew', 'chewinggum',
 VISA_DIR = './datasets/VisA_pytorch/1cls'
 
 
-def load_visa(category, k_shot):
+def load_visa(category, k_shot, *args):
     def load_phase(root_path, gt_path):
         img_tot_paths = []
         gt_tot_paths = []

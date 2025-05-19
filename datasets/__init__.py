@@ -32,7 +32,9 @@ def get_dataloader_from_args(phase, **kwargs):
         load_function=load_function_dict[kwargs['dataset']],
         category=kwargs['class_name'],
         phase=phase,
-        k_shot=kwargs['k_shot']
+        k_shot=kwargs['k_shot'],
+        seed = kwargs['seed'],
+        distance_per_slice=kwargs['distance_per_slice'],
     )
     
     if phase == 'train':

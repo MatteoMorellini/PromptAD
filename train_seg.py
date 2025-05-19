@@ -126,7 +126,6 @@ def fit(model,
         names = []
         print('begin inference...')
         for (data, mask, label, name, img_type) in dataloader:
-            print('step of inference')
             data = [model.transform(Image.fromarray(f.numpy())) for f in data]
             data = torch.stack(data, dim=0)
 
@@ -177,9 +176,9 @@ def main(args):
     kwargs['device'] = device
 
     if kwargs['dataset'] == 'brats':
-        kwargs['n_slices'] = 2
+        kwargs['distance_per_slice'] = 5
     else:
-        kwargs['n_slices'] = 1
+        kwargs['distance_per_slice'] = 0
 
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
