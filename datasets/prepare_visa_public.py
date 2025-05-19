@@ -14,9 +14,9 @@ def _mkdirs_if_not_exists(path):
 
 parser = argparse.ArgumentParser(description='Data preparation')
 parser.add_argument('--split-type',default='1cls', type=str,help='1cls, 2cls_highshot, 2cls_fewshot')
-parser.add_argument('--data-folder',default='./anomaly_detection/VisA_20220922', type=str,help='the path to downloaded VisA dataset')
-parser.add_argument('--save-folder',default='./anomaly_detection/VisA_20220922/VisA_pytorch/', type=str,help='the target path to save the reorganized VisA dataset facilitating data loading in pytorch')
-parser.add_argument('--split-file',default='./anomaly_detection/VisA_20220922/split_csv/1cls.csv', type=str,help='the csv file to split downloaded VisA dataset')
+parser.add_argument('--data-folder',default='./VisA_20220922', type=str,help='the path to downloaded VisA dataset')
+parser.add_argument('--save-folder',default='./VisA_20220922/VisA_pytorch/', type=str,help='the target path to save the reorganized VisA dataset facilitating data loading in pytorch')
+parser.add_argument('--split-file',default='./VisA_20220922/split_csv/1cls.csv', type=str,help='the csv file to split downloaded VisA dataset')
 
 config = parser.parse_args()
 

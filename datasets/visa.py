@@ -6,7 +6,7 @@ visa_classes = ['candle', 'capsules', 'cashew', 'chewinggum',
                    'fryum', 'macaroni1', 'macaroni2',
                 'pcb1', 'pcb2', 'pcb3','pcb4', 'pipe_fryum']
 
-VISA_DIR = './DATA/anomaly_detection/VisA_pytorch/1cls'
+VISA_DIR = './datasets/VisA_pytorch/1cls'
 
 
 def load_visa(category, k_shot):
@@ -52,6 +52,7 @@ def load_visa(category, k_shot):
     test_img_tot_paths, test_gt_tot_paths, test_tot_labels, \
     test_tot_types = load_phase(test_img_path, ground_truth_path)
 
+    # Remember: only normal samples available during training
     seed_file = os.path.join('./datasets/seeds_visa', category, 'selected_samples_per_run.txt')
     with open(seed_file, 'r') as f:
         files = f.readlines()
@@ -63,11 +64,11 @@ def load_visa(category, k_shot):
             strip_line = line[len(begin_str):-1]
             index = strip_line.split(' ')
             training_indx = [int(item) for item in index]
-
+    print(f"training indx: {training_indx}")
     selected_train_img_tot_paths = [train_img_tot_paths[k] for k in training_indx]
     selected_train_gt_tot_paths = [train_gt_tot_paths[k] for k in training_indx]
     selected_train_tot_labels = [train_tot_labels[k] for k in training_indx]
     selected_train_tot_types = [train_tot_types[k] for k in training_indx]
-
+    print(f"selected train img paths: {selected_train_img_tot_paths}")
     return (selected_train_img_tot_paths, selected_train_gt_tot_paths, selected_train_tot_labels, selected_train_tot_types), \
            (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types)

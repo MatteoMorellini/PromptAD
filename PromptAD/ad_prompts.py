@@ -9,7 +9,8 @@ class_mapping = {
     "pcb4": "printed circuit board",
     "pipe_fryum": "pipe fryum",
     "chewinggum": "chewing gum",
-    "metal_nut": "metal nut"
+    "metal_nut": "metal nut", 
+    "t2w": "MRI in t2w"
 }
 
 
@@ -24,7 +25,7 @@ state_anomaly = ["damaged {}",
 
 abnormal_state0 = ['damaged {}', 'broken {}', '{} with flaw', '{} with defect', '{} with damage']
 
-#
+
 class_state_abnormal = {
     'bottle': ['{} with large breakage', '{} with small breakage', '{} with contamination'],
     'toothbrush': ['{} with defect', '{} with anomaly'],
@@ -54,4 +55,6 @@ class_state_abnormal = {
     'pcb2': ['{} with bent', '{} with scratch', '{} with missing', '{} with melt'],
     'pcb3': ['{} with bent', '{} with scratch', '{} with missing', '{} with melt'],
     'pcb4': ['{} with scratch', '{} with extra', '{} with missing', '{} with wrong place', '{} with damage', '{} with burnt', '{} with dirt'],
-    'pipe_fryum': ['{} with breakage', '{} with small scratches', '{} with burnt', '{} with stuck together', '{} with colour spot', '{} with cracks']}
+    'pipe_fryum': ['{} with breakage', '{} with small scratches', '{} with burnt', '{} with stuck together', '{} with colour spot', '{} with cracks'],
+    't2w': []
+    }

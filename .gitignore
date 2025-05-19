@@ -1,0 +1,5 @@
+.history/
+.DS_Store
+datasets/VisA_20220922/
+datasets/VisA_pytorch/
+result/

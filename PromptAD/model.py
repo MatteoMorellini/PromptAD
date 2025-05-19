@@ -35,7 +35,7 @@ class PromptLearner(nn.Module):
             dtype = torch.float32
 
         state_anomaly1 = state_anomaly + class_state_abnormal[classname]
-
+        
         if classname in class_mapping:
             classname = class_mapping[classname]
 
@@ -56,7 +56,6 @@ class PromptLearner(nn.Module):
 
         # normal prompt
         normal_prompts = [normal_prompt_prefix + " " + classname + "." for _ in range(n_pro)]
-
         # abnormal prompt
         self.n_ab_handle = len(state_anomaly1)
         abnormal_prompts_handle = [normal_prompt_prefix + " " + state.format(classname) + "." for state in state_anomaly1 for _ in range(n_pro)]
@@ -103,7 +102,8 @@ class PromptLearner(nn.Module):
 
         normal_prefix = self.normal_token_prefix
         normal_suffix = self.normal_token_suffix
-
+        # print(normal_prefix.shape, normal_ctx.shape, normal_suffix.shape)
+        # -> torch.Size([1, 1, 640]) torch.Size([1, 4, 640]) torch.Size([1, 72, 640])
         normal_prompts = torch.cat(
             [
                 normal_prefix,  # (n_pro, 1, dim)
@@ -112,6 +112,8 @@ class PromptLearner(nn.Module):
             ],
             dim=1,
         )
+
+        print(f"normal_prompts: {normal_prompts.shape}")
 
         # handle abnormal prompt
         n_ab_handle = self.n_ab_handle
@@ -131,6 +133,8 @@ class PromptLearner(nn.Module):
             dim=1,
         )
 
+        print(f"abnormal_prompts_handle: {abnormal_prompts_handle.shape}")
+
         # learned abnormal prompt
         abnormal_prefix_learned = self.abnormal_token_prefix_learned
         abnormal_suffix_learned = self.abnormal_token_suffix_learned
@@ -149,6 +153,8 @@ class PromptLearner(nn.Module):
             dim=1,
         )
 
+        print(f"abnormal_prompts_learned: {abnormal_prompts_learned.shape}")
+
         # abnormal_prompts = torch.cat([abnormal_prompts_handle, abnormal_prompts_learned], dim=0)
         # abnormal_prompts = abnormal_prompts_handle
 
@@ -166,8 +172,9 @@ class PromptAD(torch.nn.Module):
         :param pretrained_dataset:
         '''
         super(PromptAD, self).__init__()
-
+        
         self.shot = kwargs['k_shot']
+        self.n_slices = kwargs['n_slices']
 
         self.out_size_h = out_size_h
         self.out_size_w = out_size_w
@@ -203,7 +210,6 @@ class PromptAD(torch.nn.Module):
         model, _, _ = CLIPAD.create_model_and_transforms(model_name=backbone, pretrained=pretrained_dataset, precision = self.precision)
         tokenizer = CLIPAD.get_tokenizer(backbone)
         model.eval()
-
         self.prompt_learner = PromptLearner(n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, model, self.precision)
         self.model = model.to(self.device)
 
@@ -213,10 +219,11 @@ class PromptAD(torch.nn.Module):
         self.grid_size = model.visual.grid_size
         self.visual_gallery = None
 
-        visual_gallery1 = torch.zeros((self.shot*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        visual_gallery1 = torch.zeros((self.shot*self.n_slices*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        print(self.shot, self.n_slices, self.grid_size[0], self.grid_size[1], self.model.visual.embed_dim)
         self.register_buffer("feature_gallery1", visual_gallery1)
 
-        visual_gallery2 = torch.zeros((self.shot*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        visual_gallery2 = torch.zeros((self.shot*self.n_slices*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery2", visual_gallery2)
 
         text_features = torch.zeros((2, self.model.visual.output_dim))

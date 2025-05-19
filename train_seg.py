@@ -42,14 +42,15 @@ def fit(model,
     features2 = []
     for (data, mask, label, name, img_type) in train_data:
         data = [model.transform(Image.fromarray(cv2.cvtColor(f.numpy(), cv2.COLOR_BGR2RGB))) for f in data]
-
         data = torch.stack(data, dim=0).to(device)
         _, _, feature_map1, feature_map2 = model.encode_image(data)
         features1.append(feature_map1)
         features2.append(feature_map2)
 
+
     features1 = torch.cat(features1, dim=0)
     features2 = torch.cat(features2, dim=0)
+
     model.build_image_feature_gallery(features1, features2)
 
     optimizer = torch.optim.SGD(model.prompt_learner.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -65,7 +66,9 @@ def fit(model,
 
             data = data.to(device)
 
+            # normal, MAP, LAP
             normal_text_prompt, abnormal_text_prompt_handle, abnormal_text_prompt_learned = model.prompt_learner()
+
 
             optimizer.zero_grad()
 
@@ -74,14 +77,12 @@ def fit(model,
             abnormal_text_features_handle = model.encode_text_embedding(abnormal_text_prompt_handle, model.tokenized_abnormal_prompts_handle)
             abnormal_text_features_learned = model.encode_text_embedding(abnormal_text_prompt_learned, model.tokenized_abnormal_prompts_learned)
             abnormal_text_features = torch.cat([abnormal_text_features_handle, abnormal_text_features_learned], dim=0)
-
             # compute mean
             mean_ad_handle = torch.mean(F.normalize(abnormal_text_features_handle, dim=-1), dim=0)
             mean_ad_learned = torch.mean(F.normalize(abnormal_text_features_learned, dim=-1), dim=0)
 
             # align LAP and MAP as squared l2 norm
             loss_match_abnormal = (mean_ad_handle - mean_ad_learned).norm(dim=0) ** 2.0
-
             # extract 3rd and 8th layers' feature map to balance global and local information
             # the last layer isn't used since it's too abstract, good for classification but not for segmentation
             _, feature_map, _, _ = model.encode_image(data)
@@ -97,7 +98,6 @@ def fit(model,
             # compute similarity score
             l_pos = torch.einsum('nic,cj->nij', feature_map, normal_text_features_ahchor.transpose(0, 1))
             l_neg_v2t = torch.einsum('nic,cj->nij', feature_map, abnormal_text_features.transpose(0, 1))
-
             if model.precision == 'fp16':
                 logit_scale = model.model.logit_scale.half()
             else:
@@ -114,7 +114,6 @@ def fit(model,
             trip_loss = criterion_tip(feature_map, normal_text_features_ahchor, abnormal_text_features_ahchor)
 
             loss = loss_v2t + trip_loss + loss_match_abnormal * args.lambda1
-
             loss.backward()
             optimizer.step()
 
@@ -125,9 +124,9 @@ def fit(model,
         test_imgs = []
         gt_mask_list = []
         names = []
-
+        print('begin inference...')
         for (data, mask, label, name, img_type) in dataloader:
-
+            print('step of inference')
             data = [model.transform(Image.fromarray(f.numpy())) for f in data]
             data = torch.stack(data, dim=0)
 
@@ -145,14 +144,16 @@ def fit(model,
 
         test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
         result_dict = metric_cal_pix(np.array(score_maps), gt_mask_list)
-
+        print('save results', result_dict)
         if best_result_dict is None:
+            print('no previous result')
             best_result_dict = result_dict
             save_check_point(model, check_path)
             if args.vis:
                 plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir)
 
         elif best_result_dict['p_roc'] < result_dict['p_roc']:
+            print('better result')
             best_result_dict = result_dict
             save_check_point(model, check_path)
             if args.vis:
@@ -169,21 +170,25 @@ def main(args):
 
     setup_seed(kwargs['seed'])
 
-    if kwargs['use_cpu'] == 0:
+    if not kwargs['use_cpu']:
         device = f"cuda:0"
     else:
         device = f"cpu"
     kwargs['device'] = device
+
+    if kwargs['dataset'] == 'brats':
+        kwargs['n_slices'] = 2
+    else:
+        kwargs['n_slices'] = 1
 
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
 
     # get the train dataloader
     train_dataloader, train_dataset_inst = get_dataloader_from_args(phase='train', perturbed=False, **kwargs)
-
     # get the test dataloader
     test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)
-
+    print(f"Train dataset size: {len(train_dataloader.dataset)}")
     kwargs['out_size_h'] = kwargs['resolution']
     kwargs['out_size_w'] = kwargs['resolution']
 
@@ -227,18 +232,23 @@ def get_args():
     parser.add_argument("--pure-test", type=str2bool, default=False)
 
     # method related parameters
-    parser.add_argument('--k-shot', type=int, default=1)
+    parser.add_argument('--k-shot', type=int, default=2)
+    # ? shoud I have the same architecture ViT-L_14 of MediCLIP?
     parser.add_argument("--backbone", type=str, default="ViT-B-16-plus-240",
                         choices=['ViT-B-16-plus-240', 'ViT-B-16'])
     parser.add_argument("--pretrained_dataset", type=str, default="laion400m_e32")
     parser.add_argument("--version", type=str, default='')
 
-    parser.add_argument("--use-cpu", type=int, default=0)
+    parser.add_argument("--use_cpu", type=bool, default=True)
 
     # prompt tuning hyper-parameter
+    # number of context tokens for normal prompts, randomly initialized and optimized during training
     parser.add_argument("--n_ctx", type=int, default=4)
+    # number of context tokens for abnormal prompts, concatenated to the normal prompt
     parser.add_argument("--n_ctx_ab", type=int, default=1)
+    # number of normal prompts to generate for each image
     parser.add_argument("--n_pro", type=int, default=1)
+    # number of abnormal prompts to generate for each image
     parser.add_argument("--n_pro_ab", type=int, default=4)
     parser.add_argument("--Epoch", type=int, default=100)
 

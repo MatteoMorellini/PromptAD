@@ -28,14 +28,13 @@ def denormalization(x):
     return x
 
 def get_dataloader_from_args(phase, **kwargs):
-
     dataset_inst = CLIPDataset(
         load_function=load_function_dict[kwargs['dataset']],
         category=kwargs['class_name'],
         phase=phase,
         k_shot=kwargs['k_shot']
     )
-
+    
     if phase == 'train':
         data_loader = DataLoader(dataset_inst, batch_size=kwargs['batch_size'], shuffle=True,
                                   num_workers=0)
