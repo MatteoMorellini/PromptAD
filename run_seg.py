@@ -6,24 +6,18 @@ if __name__ == '__main__':
 
     pool = Pool(processes=1)
 
-    datasets = ['mvtec', 'visa']
-    shots = [1, 2, 4]
+    datasets = [ ('brats', 't2w')]
+    shots = [1, 5, 10]
 
-    for shot in shots:
-        for dataset in datasets:
-            classes = dataset_classes[dataset]
-            for cls in classes[:]:
-                sh_method = f'python train_seg.py ' \
-                            f'--dataset {dataset} ' \
-                            f'--k-shot {shot} ' \
-                            f'--class_name {cls} ' \
+    for (dataset, classname) in datasets:
+        for shot in shots:
+            sh_method = f'python train_seg.py ' \
+                        f'--dataset {dataset} ' \
+                        f'--class_name {classname} ' \
+                        f'--k-shot {shot}' \
 
-                print(sh_method)
-                pool.apply_async(os.system, (sh_method,))
+            print(sh_method)
+            pool.apply_async(os.system, (sh_method,))
 
     pool.close()
     pool.join()
-
-
-
-

@@ -31,7 +31,8 @@ def get_dir_from_args(TASK, root_dir, **kwargs):
 
     csv_dir = os.path.join(root_dir, f'{dataset}', f'k_{k_shot}', 'csv')
     check_dir = os.path.join(root_dir, f'{dataset}', f'k_{k_shot}', 'checkpoint')
-    img_dir = os.path.join(root_dir, f'{dataset}', f'k_{k_shot}', 'imgs')
+    folder = f"{k_shot}_shot-100_epochs" if kwargs['inference'] else 'imgs'
+    img_dir = os.path.join(root_dir, f'{dataset}', f'k_{k_shot}', folder)
 
     csv_path = os.path.join(csv_dir, f"Seed_{kwargs['seed']}-results.csv")
     check_path = os.path.join(check_dir, f"{TASK}-Seed_{kwargs['seed']}-{kwargs['class_name']}-check_point.pt")

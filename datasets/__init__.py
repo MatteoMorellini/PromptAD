@@ -6,21 +6,22 @@ from .dataset import CLIPDataset
 from .mvtec import load_mvtec, mvtec_classes
 from .visa import load_visa, visa_classes
 from .brats import load_brats, brats_classes
-
-# TODO: since brats is greyscale image, mean and std should be calculated?
+from .brainmri import load_brainmri, brainmri_classes
 mean_train = [0.48145466, 0.4578275, 0.40821073]
 std_train = [0.26862954, 0.26130258, 0.27577711]
 
 load_function_dict = {
     'mvtec': load_mvtec,
     'visa': load_visa,
-    'brats': load_brats
+    'brats': load_brats,
+    'brainmri': load_brainmri
 }
 
 dataset_classes = {
     'mvtec': mvtec_classes,
     'visa': visa_classes,
-    'brats': brats_classes
+    'brats': brats_classes,
+    'brainmri': brainmri_classes
 }
 
 def denormalization(x):
@@ -35,6 +36,9 @@ def get_dataloader_from_args(phase, **kwargs):
         k_shot=kwargs['k_shot'],
         seed = kwargs['seed'],
         distance_per_slice=kwargs['distance_per_slice'],
+        inference = kwargs['inference'],
+        left_slice = kwargs['left_slice'],
+        right_slice = kwargs['right_slice']
     )
     
     if phase == 'train':

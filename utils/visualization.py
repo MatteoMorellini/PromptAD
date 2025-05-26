@@ -1,12 +1,11 @@
 import cv2
 import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import seaborn as sns
-
+from PIL import Image
 ##
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
@@ -15,12 +14,13 @@ from sklearn.decomposition import PCA
 import matplotlib.ticker as mtick
 
 
-def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None):
+def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None, inference = False):
+    os.makedirs(save_folder, exist_ok=True)
     # get subplot number
     total_number = len(imgs)
 
     scores = scores_.copy()
-    # normarlisze anomalies
+    # normalize anomalies
     for k, v in scores.items():
         max_value = np.max(v)
         min_value = np.min(v)
@@ -33,19 +33,38 @@ def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None):
         gts_ = gts[idx]
         mask_imgs_ = imgs[idx].copy()
         mask_imgs_[gts_ > 0.5] = (0, 0, 255)
+        count = np.sum(gts_ > 0.5)
         mask_imgs.append(mask_imgs_)
-
     # save imgs
     for idx in range(total_number):
-        cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_ori.jpg'), imgs[idx])
-        cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
+        if not inference:
+            patient_folder = os.path.join(save_folder, names[idx].split('/')[0])
+            os.makedirs(patient_folder, exist_ok=True)
+            cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_ori.jpg'), imgs[idx])
+            cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
+            for key in scores:
+                #print(names[idx])
+                #print(f"the maximum value is: {np.max(scores[key][idx])}")
+                #print(f"the minimum value is: {np.min(scores[key][idx])}")
+                heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
+                visz_map = cv2.addWeighted(heat_map, 0.5, imgs[idx], 0.5, 0)
+                
+                cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_{key}.jpg'),
+                            visz_map)
 
-        for key in scores:
-            heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
-            visz_map = cv2.addWeighted(heat_map, 0.5, imgs[idx], 0.5, 0)
-            cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_{key}.jpg'),
-                        visz_map)
 
+        else:
+            patient_folder = os.path.join(save_folder, names[idx].split('/')[0])
+            os.makedirs(patient_folder, exist_ok=True)
+            cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
+            for key in scores:
+                #mask = cv2.bitwise_not(mask)
+                cv2.imwrite(os.path.join(save_folder, f'{names[idx]}-mixed.jpg'), scores[key][idx])
+
+                heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
+                visz_map = cv2.addWeighted(heat_map, 0.5, imgs[idx], 0.5, 0)
+                cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_{key}.jpg'),
+                            visz_map)
 
 def plot_anomaly_score_distributions(scores: dict, ground_truths_list, save_folder, class_name):
     ground_truths = np.stack(ground_truths_list, axis=0)

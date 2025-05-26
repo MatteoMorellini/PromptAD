@@ -3,6 +3,9 @@ from .model import *
 # def get_model_from_args(**kwargs)->WinClipAD:
 #     model = WinClipAD(**kwargs)
 #     return model
+import warnings
+warnings.simplefilter("ignore", category=FutureWarning)
+
 
 class TripletLoss(nn.Module):
     def __init__(self, margin=1.0):

@@ -113,8 +113,6 @@ class PromptLearner(nn.Module):
             dim=1,
         )
 
-        print(f"normal_prompts: {normal_prompts.shape}")
-
         # handle abnormal prompt
         n_ab_handle = self.n_ab_handle
 
@@ -133,7 +131,6 @@ class PromptLearner(nn.Module):
             dim=1,
         )
 
-        print(f"abnormal_prompts_handle: {abnormal_prompts_handle.shape}")
 
         # learned abnormal prompt
         abnormal_prefix_learned = self.abnormal_token_prefix_learned
@@ -152,8 +149,6 @@ class PromptLearner(nn.Module):
             ],
             dim=1,
         )
-
-        print(f"abnormal_prompts_learned: {abnormal_prompts_learned.shape}")
 
         # abnormal_prompts = torch.cat([abnormal_prompts_handle, abnormal_prompts_learned], dim=0)
         # abnormal_prompts = abnormal_prompts_handle
@@ -218,8 +213,9 @@ class PromptAD(torch.nn.Module):
         self.abnormal_text_features = None
         self.grid_size = model.visual.grid_size
         self.visual_gallery = None
-
-        slice_multiplier = 1 if self.distance_per_slice == 0 else (155//self.distance_per_slice+1)
+        slice_multiplier = 1 if self.distance_per_slice == 0 else (155//self.distance_per_slice)
+        if self.distance_per_slice > 0 and 155%self.distance_per_slice!=0: 
+            slice_multiplier+=1
         visual_gallery1 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery1", visual_gallery1)
 

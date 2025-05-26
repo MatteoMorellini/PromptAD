@@ -20,11 +20,11 @@ def calculate_max_f1(gt, scores):
 def metric_cal_img(img_scores, gt_list, map_scores=None):
     # calculate image-level ROC AUC score
     max_map_scores = map_scores.reshape(map_scores.shape[0], -1).max(axis=1)
-
-    img_scores = 1.0 / (1.0 / max_map_scores + 1.0 / img_scores)
+    img_scores = 1.0 / (1.0 / np.array(max_map_scores) + 1.0 / np.array(img_scores))
     # img_scores = img_scores
 
     gt_list = np.asarray(gt_list, dtype=int)
+    #print(list(zip(gt_list, img_scores)))
     fpr, tpr, _ = roc_curve(gt_list, img_scores)
     img_roc_auc = roc_auc_score(gt_list, img_scores)
 
