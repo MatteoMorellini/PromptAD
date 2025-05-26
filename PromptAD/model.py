@@ -371,10 +371,16 @@ class PromptAD(torch.nn.Module):
 
         elif task == 'cls':
             textual_anomaly = self.calculate_textual_anomaly_score(visual_features, 'cls')
+            textual_anomaly_map = self.calculate_textual_anomaly_score(visual_features, 'seg')
 
             visual_anomaly_map = self.calculate_visual_anomaly_score(visual_features)
 
-            anomaly_map = F.interpolate(visual_anomaly_map, size=(self.out_size_h, self.out_size_w), mode='bilinear',
+            # * I don't see why the CLS task shouldn't use the same fusion as the SEG task
+            # * Otherwise, training solely the prompt features, the visual anomaly map won't change
+            # * Hence the anomaly map will be the same across all epochs
+            anomaly_map = 1. / (1. / textual_anomaly_map + 1. / visual_anomaly_map)
+
+            anomaly_map = F.interpolate(anomaly_map, size=(self.out_size_h, self.out_size_w), mode='bilinear',
                                         align_corners=False)
 
             am_pix = anomaly_map.squeeze(1).numpy()
@@ -382,6 +388,8 @@ class PromptAD(torch.nn.Module):
             am_pix_list = []
 
             for i in range(am_pix.shape[0]):
+                # extract the 2D anomaly map for the i-th image in the batch
+                am_pix[i] = gaussian_filter(am_pix[i], sigma=4)
                 am_pix_list.append(am_pix[i])
 
             am_img_list = []
@@ -391,6 +399,7 @@ class PromptAD(torch.nn.Module):
             return am_img_list, am_pix_list
         else:
             assert 'task error'
+
 
     def train_mode(self):
         self.model.train()

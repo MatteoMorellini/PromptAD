@@ -219,7 +219,7 @@ def fit(model,
                     best_result_dict = result_dict
                     save_check_point(model, check_path)
                     if args.vis:
-                        plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=(img_dir+str(epoch)))
+                        plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir)
                 
 
 

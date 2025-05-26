@@ -115,7 +115,7 @@ def get_args():
     parser.add_argument('--img-cropsize', type=int, default=240)
     parser.add_argument('--resolution', type=int, default=240) #before was 400
 
-    parser.add_argument('--batch-size', type=int, default=10)
+    parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--vis', type=str2bool, choices=[True, False], default=True)
     parser.add_argument("--root-dir", type=str, default="./result")
     parser.add_argument("--load-memory", type=str2bool, default=True)

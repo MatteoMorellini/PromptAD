@@ -7,7 +7,7 @@ if __name__ == '__main__':
     pool = Pool(processes=1)
 
     datasets = ['brats']
-    shots = [5, 10]
+    shots = [1, 5]
     slices = [(0,20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120), (120, 140), (140, 155)]
 
     for shot in shots:
