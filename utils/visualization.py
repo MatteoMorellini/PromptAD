@@ -18,7 +18,6 @@ def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None, inference
     os.makedirs(save_folder, exist_ok=True)
     # get subplot number
     total_number = len(imgs)
-
     scores = scores_.copy()
     # normalize anomalies
     for k, v in scores.items():
@@ -52,14 +51,12 @@ def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None, inference
                 cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_{key}.jpg'),
                             visz_map)
 
-
         else:
             patient_folder = os.path.join(save_folder, names[idx].split('/')[0])
             os.makedirs(patient_folder, exist_ok=True)
-            cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
+            #cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
             for key in scores:
-                #mask = cv2.bitwise_not(mask)
-                cv2.imwrite(os.path.join(save_folder, f'{names[idx]}-mixed.jpg'), scores[key][idx])
+                cv2.imwrite(os.path.join(save_folder, f'{names[idx]}.jpg'), scores[key][idx])
 
                 heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
                 visz_map = cv2.addWeighted(heat_map, 0.5, imgs[idx], 0.5, 0)

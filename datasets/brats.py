@@ -25,7 +25,6 @@ def load_brats(category, k_shot, seed, distance_per_slice, left_slice, right_sli
         gt_tot_paths = {}
         tot_labels = {}
         tot_types = {}
-
         #patients = list_non_hidden_folders(root_path)
         meta_info = json.load(open(f"{train_img_path}/meta.json", "r"))
         if train:
@@ -38,8 +37,9 @@ def load_brats(category, k_shot, seed, distance_per_slice, left_slice, right_sli
             patient = training_slice['img_path'].split('/')[6]
             patients.add(patient)
     
-        patients = list(patients)
-        random.shuffle(patients, random.seed(seed))
+        patients = list(sorted(patients))
+        random.seed(seed)
+        random.shuffle(patients)
         if inference:
             distance_per_slice = 1
         elif not train: #ie validation
@@ -56,8 +56,9 @@ def load_brats(category, k_shot, seed, distance_per_slice, left_slice, right_sli
             images = sorted(glob.glob(os.path.join(root_path, patient, category) + '/*.jpeg'))
             masks = sorted(glob.glob(os.path.join(root_path, patient, 'seg') + '/*.jpeg'))
             for  i, (img_path, mask_path) in enumerate(zip(images, masks)):
-                if i % distance_per_slice != 0: continue
-                if inference and (i < left_slice or i >= right_slice): continue
+                if i % distance_per_slice != 0: 
+                    continue
+                if inference and (i < left_slice or i >= right_slice):  continue
                 if get_is_abnormal(mask_path):
                     if train: continue
                     gt_patient_paths.append(mask_path)
@@ -87,9 +88,7 @@ def load_brats(category, k_shot, seed, distance_per_slice, left_slice, right_sli
 
     test_img_tot_paths, test_gt_tot_paths, test_tot_labels, \
     test_tot_types = load_phase(train_img_path, seed, distance_per_slice, left_slice, right_slice, inference=inference)
-
     keys = list(train_img_tot_paths.keys())
-    random.shuffle(keys)
 
     selected_train_img_tot_paths = defaultdict(list)
     selected_train_gt_tot_paths = defaultdict(list)

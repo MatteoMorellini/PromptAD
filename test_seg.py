@@ -25,43 +25,52 @@ def test(model,
     # change the model into eval mode
     model.eval_mode()
 
-    torch.load(check_path)
-    model.load_state_dict(torch.load(check_path), strict=False)
+    if args.checkpoint:
+        previous_checkpoint = './result/brainmri/k_-1/checkpoint/SEG-Seed_111-normal_brain-check_point.pt'
+        torch.load(previous_checkpoint)
+        model.load_state_dict(torch.load(previous_checkpoint), strict=False)
+    else:
+        torch.load(check_path)
+        model.load_state_dict(torch.load(check_path), strict=False)
 
     score_maps = []
     test_imgs = []
+    gt_list = []
     gt_mask_list = []
     names = []
+    image_scores = []
     with torch.no_grad():
         for (data, mask, label, name, img_type) in dataloader:
             data = [model.transform(Image.fromarray(f.numpy())) for f in data]
             data = torch.stack(data, dim=0)
 
             for d, n, l, m in zip(data, name, label, mask):
-                #print(d, n, l, m)
                 test_imgs += [denormalization(d.cpu().numpy())]
                 m = m.numpy()
                 m[m > 0] = 1
 
                 names += [n]
-                gt_mask_list += [m]
+                gt_mask_list += [m] # mask tensor 
+                
+                gt_list += [l] # label
 
             data = data.to(device)
-            score_map = model(data, 'seg')
+            if args.dataset == 'brainmri':
+                image_score, score_map = model(data, 'cls')
+                image_scores += image_score
+            else:
+                score_map = model(data, 'seg')
             score_maps += score_map
-
     test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
-    result_dict = metric_cal_pix(np.array(score_maps), gt_mask_list)
-
-    torch.save(model.state_dict(), check_path)
+    print('qui ci sono')
     if args.vis:
         plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir, inference = True)
 
-    return result_dict
 
 
 def main(args):
     kwargs = vars(args)
+    brainmri_from_scratch = False
 
     if kwargs['seed'] is None:
         kwargs['seed'] = 222
@@ -83,16 +92,26 @@ def main(args):
 
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
-    # get the test dataloader
-    test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)
+
+    # get the model
+    if kwargs['dataset'] == 'brainmri' and kwargs['class_name'] == 't2w':
+        kwargs['class_name'] = 'normal_brain'
+        brainmri_from_scratch = True
+    
     kwargs['out_size_h'] = kwargs['resolution']
     kwargs['out_size_w'] = kwargs['resolution']
-    # get the model
     model = PromptAD(**kwargs)
     model = model.to(device)
 
-    # as the pro metric calculation is costly, we only calculate it in the last evaluation
-    metrics = test(model, args, test_dataloader, device, img_dir=img_dir, check_path=check_path)
+    # get the test dataloader
+    if brainmri_from_scratch:
+        kwargs['dataset'] = 'brats'
+        kwargs['class_name'] = 't2w'
+        kwargs['distance_per_slice'] = 1
+        
+    test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)
+    print(len(test_dataloader))
+    test(model, args, test_dataloader, device, img_dir=img_dir, check_path=check_path)
 
     #p_roc = round(metrics['p_roc'], 2)
     #object = kwargs['class_name']
@@ -108,7 +127,7 @@ def str2bool(v):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Anomaly detection')
-    parser.add_argument('--dataset', type=str, default='brats', choices=['mvtec', 'visa', 'brats'])
+    parser.add_argument('--dataset', type=str, default='brats', choices=['mvtec', 'visa', 'brats', 'brainmri'])
     parser.add_argument('--class_name', type=str, default='t2w')
 
     parser.add_argument('--img-resize', type=int, default=240)
@@ -141,7 +160,9 @@ def get_args():
     parser.add_argument("--n_pro", type=int, default=1)
     parser.add_argument("--n_pro_ab", type=int, default=4)
     parser.add_argument("--left_slice", type=int, default=0)
-    parser.add_argument("--right_slice",  type=int, default=0)
+    parser.add_argument("--right_slice",  type=int, default=20)
+
+    parser.add_argument("--checkpoint", type=bool, default = False)
 
     args = parser.parse_args()
 

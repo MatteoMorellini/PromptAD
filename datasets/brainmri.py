@@ -28,7 +28,7 @@ def load_brainmri(category, k_shot, seed, *args):
                 tot_types.extend(['normal'] * len(img_paths))
             else:
                 img_paths = glob.glob(os.path.join(root_path, defect_type) + "/*.jpg")
-                # ! remove gt_paths since I don't have masks 
+                # * removed gt_paths since I don't have masks 
                 gt_tot_paths.extend([0]*len(img_paths)) 
                 img_paths.sort()
                 img_tot_paths.extend(img_paths)
@@ -51,23 +51,27 @@ def load_brainmri(category, k_shot, seed, *args):
     # Remember: only normal samples available during training
     # * selected samples shuffled with the given seed, then selected the 1st one for 1-shot,
     # * from the 2nd to the 6th for 5-shot...
-    seed_file = os.path.join('./datasets/seeds_brainmri', 'selected_samples_per_run.txt')
-    with open(seed_file, 'r') as f:
-        files = f.readlines()
-    begin_str = f'#{k_shot}: '
+    if k_shot != -1:
+        seed_file = os.path.join('./datasets/seeds_brainmri', 'selected_samples_per_run.txt')
+        with open(seed_file, 'r') as f:
+            files = f.readlines()
+        begin_str = f'#{k_shot}: '
 
-    training_indx = []
-    for line in files:
-        if line.count(begin_str) > 0:
-            strip_line = line[len(begin_str):-1]
-            index = strip_line.split(' ')
-            training_indx = [int(item) for item in index]
+        training_indx = []
+        for line in files:
+            if line.count(begin_str) > 0:
+                strip_line = line[len(begin_str):-1]
+                index = strip_line.split(' ')
+                training_indx = [int(item) for item in index]
             
-    print(f"training indx: {training_indx}")
-    selected_train_img_tot_paths = [train_img_tot_paths[k] for k in training_indx]
-    selected_train_gt_tot_paths = [train_gt_tot_paths[k] for k in training_indx]
-    selected_train_tot_labels = [train_tot_labels[k] for k in training_indx]
-    selected_train_tot_types = [train_tot_types[k] for k in training_indx]
-    print(f"selected train img paths: {selected_train_img_tot_paths}")
-    return (selected_train_img_tot_paths, selected_train_gt_tot_paths, selected_train_tot_labels, selected_train_tot_types), \
-           (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types)
+        print(f"training indx: {training_indx}")
+        selected_train_img_tot_paths = [train_img_tot_paths[k] for k in training_indx]
+        selected_train_gt_tot_paths = [train_gt_tot_paths[k] for k in training_indx]
+        selected_train_tot_labels = [train_tot_labels[k] for k in training_indx]
+        selected_train_tot_types = [train_tot_types[k] for k in training_indx]
+        print(f"selected train img paths: {selected_train_img_tot_paths}")
+        return (selected_train_img_tot_paths, selected_train_gt_tot_paths, selected_train_tot_labels, selected_train_tot_types), \
+            (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types)
+    else:
+        return (train_img_tot_paths, train_gt_tot_paths, train_tot_labels, train_tot_types), \
+            (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types)

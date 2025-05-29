@@ -77,6 +77,12 @@ def fit(model,
         ):
     # change the model into eval mode
     model.eval_mode()
+    if args.checkpoint:
+        previous_checkpoint = './result/brainmri/k_-1/checkpoint/SEG-Seed_111-normal_brain-check_point.pt'
+        print('loading the model')
+        torch.load(previous_checkpoint)
+        model.load_state_dict(torch.load(previous_checkpoint), strict=False)
+        print("model correctly loaded")
 
     features1 = []
     features2 = []
@@ -87,10 +93,13 @@ def fit(model,
         features1.append(feature_map1)
         features2.append(feature_map2)
 
-
     features1 = torch.cat(features1, dim=0)
     features2 = torch.cat(features2, dim=0)
 
+    if args.checkpoint:
+        print('creating the new feature gallery')
+        model.create_image_feature_gallery()
+    print('filling the feature gallery')
     model.build_image_feature_gallery(features1, features2)
 
     optimizer = torch.optim.SGD(model.prompt_learner.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -101,6 +110,7 @@ def fit(model,
     best_result_dict = None
     first_image = None
     for epoch in range(args.Epoch):
+        """
         for (data, mask, label, name, img_type) in train_data:
             data = [model.transform(Image.fromarray(cv2.cvtColor(f.numpy(), cv2.COLOR_BGR2RGB))) for f in data]
             data = torch.stack(data, dim=0).to(device)
@@ -156,7 +166,7 @@ def fit(model,
             loss.backward()
             optimizer.step()
             #print(f"Loss {loss} divided in:", loss_v2t.mean().item(), trip_loss.item(), (loss_match_abnormal*args.lambda1).item())
-
+        """
         scheduler.step()
         model.build_text_feature_gallery()
 
@@ -186,12 +196,7 @@ def fit(model,
                 score_map = model(data, 'seg')
             score_maps += score_map
         
-        
-        """if first_image is None:
-            first_image = torch.from_numpy(copy.deepcopy(score_maps[0]))
-        else:
-            print(torch.equal(first_image, torch.from_numpy(score_maps[0])))
-        """
+    
         test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
         if args.dataset=='brainmri':
             result_dict = metric_cal_img(image_scores, gt_list, np.array(score_maps))
@@ -220,8 +225,6 @@ def fit(model,
                     save_check_point(model, check_path)
                     if args.vis:
                         plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir)
-                
-
 
     return best_result_dict
 
@@ -234,10 +237,7 @@ def main(args):
 
     setup_seed(kwargs['seed'])
 
-    if not kwargs['use_cpu']:
-        device = f"cuda:0"
-    else:
-        device = f"cpu"
+    device = f"cuda"
     kwargs['device'] = device
 
     if kwargs['dataset'] == 'brats':
@@ -264,6 +264,7 @@ def main(args):
     model = model.to(device)
 
     # as the pro metric calculation is costly, we only calculate it in the last evaluation
+    # ? implement pro metric for the last calculation
     metrics = fit(model, args, test_dataloader, device, img_dir=img_dir, check_path=check_path, train_data=train_dataloader)
 
     p_roc = round(metrics['p_roc'], 2)
@@ -306,8 +307,6 @@ def get_args():
     parser.add_argument("--pretrained_dataset", type=str, default="laion400m_e32")
     parser.add_argument("--version", type=str, default='')
 
-    parser.add_argument("--use_cpu", type=bool, default=False)
-
     # prompt tuning hyper-parameter
     # number of context tokens for normal prompts, randomly initialized and optimized during training
     parser.add_argument("--n_ctx", type=int, default=4)
@@ -326,8 +325,11 @@ def get_args():
 
     # loss hyper parameter
     parser.add_argument("--lambda1", type=float, default=0.001)
+
     parser.add_argument("--left_slice", type=int, default=0)
     parser.add_argument("--right_slice",  type=int, default=0)
+    parser.add_argument('--checkpoint', type=bool, default=False)
+
 
     args = parser.parse_args()
 

@@ -176,9 +176,8 @@ class PromptAD(torch.nn.Module):
         self.precision = 'fp16' #precision  -40% GPU memory (2.8G->1.6G) with slight performance drop
 
         self.device = device
-        self.get_model(n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset)
+        self.get_model(n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, kwargs['checkpoint'])
         self.phrase_form = '{}'
-        self.device = device
 
         # version v1: no norm for each of linguistic embedding
         # version v1:    norm for each of linguistic embedding
@@ -197,7 +196,7 @@ class PromptAD(torch.nn.Module):
             transforms.CenterCrop(kwargs['img_cropsize']),
             transforms.ToTensor()])
 
-    def get_model(self, n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset):
+    def get_model(self, n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, checkpoint = False):
 
         assert backbone in valid_backbones
         assert pretrained_dataset in valid_pretrained_datasets
@@ -214,14 +213,20 @@ class PromptAD(torch.nn.Module):
         self.grid_size = model.visual.grid_size
         self.visual_gallery = None
         slice_multiplier = 1 if self.distance_per_slice == 0 else (155//self.distance_per_slice)
+        if self.shot == -1 and class_name == 'normal_brain':
+            self.shot = 32
         if self.distance_per_slice > 0 and 155%self.distance_per_slice!=0: 
             slice_multiplier+=1
-        visual_gallery1 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        if checkpoint:
+            # 1. create a dummy visual gallery with the same dimensions
+            #self.shot = 32 # brainmri training set samples
+            visual_gallery1 = torch.zeros((7200, self.model.visual.embed_dim))
+            visual_gallery2 = torch.zeros((7200, self.model.visual.embed_dim))
+        else:
+            visual_gallery1 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+            visual_gallery2 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery1", visual_gallery1)
-
-        visual_gallery2 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
         self.register_buffer("feature_gallery2", visual_gallery2)
-
         text_features = torch.zeros((2, self.model.visual.output_dim))
         self.register_buffer("text_features", text_features)
 
@@ -239,7 +244,6 @@ class PromptAD(torch.nn.Module):
 
     @torch.no_grad()
     def encode_image(self, image: torch.Tensor):
-
         if self.precision == "fp16":
             image = image.half()
         image_features = self.model.encode_image(image)
@@ -289,6 +293,20 @@ class PromptAD(torch.nn.Module):
         avr_abnormal_text_features = avr_abnormal_text_features
         text_features = torch.cat([avr_normal_text_features, avr_abnormal_text_features], dim=0)
         self.text_features.copy_(text_features / text_features.norm(dim=-1, keepdim=True))
+
+    def create_image_feature_gallery(self):
+        slice_multiplier = 1 if self.distance_per_slice == 0 else (155//self.distance_per_slice)
+        if self.distance_per_slice > 0 and 155%self.distance_per_slice!=0: 
+            slice_multiplier+=1
+        visual_gallery1 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+        visual_gallery2 = torch.zeros((self.shot*slice_multiplier*self.grid_size[0]*self.grid_size[1], self.model.visual.embed_dim))
+
+        self.feature_gallery1 = visual_gallery1.to(self.device)
+        self.feature_gallery2 = visual_gallery2.to(self.device)
+
+        if self.precision == 'fp16':
+            self.feature_gallery1  = self.feature_gallery1.half()
+            self.feature_gallery2  = self.feature_gallery2.half()
 
     def build_image_feature_gallery(self, features1, features2):
         b1, n1, d1 = features1.shape
