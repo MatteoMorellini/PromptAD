@@ -5,9 +5,10 @@ from multiprocessing import Pool
 if __name__ == '__main__':
 
     pool = Pool(processes=1)
-
-    datasets = [('brainmri', 't2w')]
-    shots = [-1, 1, 5, 10]
+    # combination for inference on brats after training on brainmri: 
+    # datasets = [...,('brainmri', 't2w'),...]
+    datasets = [('brainmri', 'normal_brain')]
+    shots = [1, 5, 10]
     slices = [(0,20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120), (120, 140), (140, 155)]
     for (dataset, class_name) in datasets:
         for shot in shots:

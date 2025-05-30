@@ -78,7 +78,7 @@ def fit(model,
     # change the model into eval mode
     model.eval_mode()
     if args.checkpoint:
-        previous_checkpoint = './result/brainmri/k_-1/checkpoint/SEG-Seed_111-normal_brain-check_point.pt'
+        previous_checkpoint = './important_results/brainmri/k_-1/checkpoint/SEG-Seed_111-normal_brain-check_point.pt'
         print('loading the model')
         torch.load(previous_checkpoint)
         model.load_state_dict(torch.load(previous_checkpoint), strict=False)
@@ -99,7 +99,7 @@ def fit(model,
     if args.checkpoint:
         print('creating the new feature gallery')
         model.create_image_feature_gallery()
-    print('filling the feature gallery')
+        print('filling the feature gallery')
     model.build_image_feature_gallery(features1, features2)
 
     optimizer = torch.optim.SGD(model.prompt_learner.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -110,7 +110,7 @@ def fit(model,
     best_result_dict = None
     first_image = None
     for epoch in range(args.Epoch):
-        """
+        
         for (data, mask, label, name, img_type) in train_data:
             data = [model.transform(Image.fromarray(cv2.cvtColor(f.numpy(), cv2.COLOR_BGR2RGB))) for f in data]
             data = torch.stack(data, dim=0).to(device)
@@ -166,7 +166,7 @@ def fit(model,
             loss.backward()
             optimizer.step()
             #print(f"Loss {loss} divided in:", loss_v2t.mean().item(), trip_loss.item(), (loss_match_abnormal*args.lambda1).item())
-        """
+        
         scheduler.step()
         model.build_text_feature_gallery()
 
@@ -196,7 +196,6 @@ def fit(model,
                 score_map = model(data, 'seg')
             score_maps += score_map
         
-    
         test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
         if args.dataset=='brainmri':
             result_dict = metric_cal_img(image_scores, gt_list, np.array(score_maps))
@@ -249,7 +248,7 @@ def main(args):
 
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
-
+    print(csv_path)
     # get the train dataloader
     train_dataloader, train_dataset_inst = get_dataloader_from_args(phase='train', perturbed=False, **kwargs)
     # get the test dataloader
@@ -274,10 +273,8 @@ def main(args):
     save_metric(metrics, dataset_classes[kwargs['dataset']], kwargs['class_name'],
                 kwargs['dataset'], csv_path)
 
-
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
-
 
 def get_args():
     parser = argparse.ArgumentParser(description='Anomaly detection')
@@ -288,7 +285,7 @@ def get_args():
     parser.add_argument('--img-cropsize', type=int, default=240)
     parser.add_argument('--resolution', type=int, default=400)
 
-    parser.add_argument('--batch-size', type=int, default=100)
+    parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--vis', type=str2bool, choices=[True, False], default=True)
     parser.add_argument("--root-dir", type=str, default="./result")
     parser.add_argument("--load-memory", type=str2bool, default=True)

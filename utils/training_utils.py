@@ -36,10 +36,12 @@ def get_dir_from_args(TASK, root_dir, **kwargs):
 
     if dataset == 'brainmri' and kwargs['class_name'] == 't2w':
         check_path = os.path.join(check_dir, f"{TASK}-Seed_{kwargs['seed']}-normal_brain-check_point.pt")
+        from_brainmri = 'brats_from_brainmri-'
     else:
         check_path = os.path.join(check_dir, f"{TASK}-Seed_{kwargs['seed']}-{kwargs['class_name']}-check_point.pt")
+        from_brainmri = ''
 
-    folder = f"{k_shot}_shot-100_epochs{checkpoint}" if kwargs['inference'] else 'imgs'
+    folder = f"{from_brainmri}{k_shot}_shot-100_epochs{checkpoint}" if kwargs['inference'] else 'imgs'
     img_dir = os.path.join(root_dir, f'{dataset}', f'k_{k_shot}{checkpoint}', folder)
 
     

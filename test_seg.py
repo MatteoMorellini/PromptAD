@@ -62,7 +62,6 @@ def test(model,
                 score_map = model(data, 'seg')
             score_maps += score_map
     test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
-    print('qui ci sono')
     if args.vis:
         plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir, inference = True)
 
@@ -110,7 +109,6 @@ def main(args):
         kwargs['distance_per_slice'] = 1
         
     test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)
-    print(len(test_dataloader))
     test(model, args, test_dataloader, device, img_dir=img_dir, check_path=check_path)
 
     #p_roc = round(metrics['p_roc'], 2)
