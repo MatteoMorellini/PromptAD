@@ -7,7 +7,7 @@ if __name__ == '__main__':
     pool = Pool(processes=1)
 
     datasets = [ ('brats', 't2w')]
-    shots = [10]
+    shots = [1, 5, 10]
 
 
 
@@ -19,7 +19,8 @@ if __name__ == '__main__':
                         f'--class_name {classname} ' \
                         f'--k-shot {shot} ' \
                         f'--vis False ' \
-                        f'--checkpoint True'
+                        f'--shuffle true ' \
+                        f'--seed 42'
 
             print(sh_method)
             pool.apply_async(os.system, (sh_method,))

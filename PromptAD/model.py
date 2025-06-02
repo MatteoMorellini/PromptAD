@@ -176,7 +176,7 @@ class PromptAD(torch.nn.Module):
         self.precision = 'fp16' #precision  -40% GPU memory (2.8G->1.6G) with slight performance drop
 
         self.device = device
-        self.get_model(n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, kwargs['checkpoint'])
+        self.get_model(n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, kwargs['checkpoint'], kwargs['inference'])
         self.phrase_form = '{}'
 
         # version v1: no norm for each of linguistic embedding
@@ -196,7 +196,7 @@ class PromptAD(torch.nn.Module):
             transforms.CenterCrop(kwargs['img_cropsize']),
             transforms.ToTensor()])
 
-    def get_model(self, n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, checkpoint = False):
+    def get_model(self, n_ctx, n_pro, n_ctx_ab, n_pro_ab, class_name, backbone, pretrained_dataset, checkpoint = False, inference = False):
 
         assert backbone in valid_backbones
         assert pretrained_dataset in valid_pretrained_datasets
@@ -217,7 +217,7 @@ class PromptAD(torch.nn.Module):
             self.shot = 32
         if self.distance_per_slice > 0 and 155%self.distance_per_slice!=0: 
             slice_multiplier+=1
-        if checkpoint:
+        if checkpoint and not inference:
             # 1. create a dummy visual gallery with the same dimensions
             #self.shot = 32 # brainmri training set samples
             visual_gallery1 = torch.zeros((7200, self.model.visual.embed_dim))

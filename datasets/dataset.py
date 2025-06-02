@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 
 class CLIPDataset(Dataset):
-    def __init__(self, load_function, category, phase, k_shot, seed, distance_per_slice, inference, left_slice, right_slice):
+    def __init__(self, load_function, category, phase, k_shot, seed, distance_per_slice, inference, shuffle):
 
         self.load_function = load_function
         self.phase = phase
@@ -14,11 +14,13 @@ class CLIPDataset(Dataset):
         self.category = category
         # load datasets
         self.img_paths, self.gt_paths, self.labels, self.types = self.load_dataset(k_shot, seed, distance_per_slice, 
-            inference, left_slice, right_slice)  # self.labels => good : 0, anomaly : 1
-    def load_dataset(self, k_shot, seed, distance_per_slice, inference, left_slice, right_slice):
+            inference, shuffle)  # self.labels => good : 0, anomaly : 1
+    def load_dataset(self, k_shot, seed, distance_per_slice, inference, shuffle):
+        # shuffle is a parameter specifically for brats, as distance_per_slice and inference
+        # when True, we first merge train and test datasets and then shuffle them 
         (train_img_tot_paths, train_gt_tot_paths, train_tot_labels, train_tot_types), \
         (test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types) = self.load_function(self.category,
-            k_shot, seed, distance_per_slice, left_slice, right_slice, inference)
+            k_shot, seed, distance_per_slice, inference, shuffle)
                 
         if self.phase == 'train':
             return train_img_tot_paths, \
@@ -26,6 +28,7 @@ class CLIPDataset(Dataset):
                    train_tot_labels, \
                    train_tot_types
         else:
+            print(f"Length of the test set: {len(test_img_tot_paths)}")
             return test_img_tot_paths, test_gt_tot_paths, test_tot_labels, test_tot_types
 
     def __len__(self):

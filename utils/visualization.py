@@ -57,11 +57,10 @@ def plot_sample_cv2(names, imgs, scores_: dict, gts, save_folder=None, inference
             #cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_gt.jpg'), mask_imgs[idx])
             for key in scores:
                 cv2.imwrite(os.path.join(save_folder, f'{names[idx]}.jpg'), scores[key][idx])
-
-                heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
+                """heat_map = cv2.applyColorMap(scores[key][idx], cv2.COLORMAP_JET)
                 visz_map = cv2.addWeighted(heat_map, 0.5, imgs[idx], 0.5, 0)
                 cv2.imwrite(os.path.join(save_folder, f'{names[idx]}_{key}.jpg'),
-                            visz_map)
+                            visz_map)"""
 
 def plot_anomaly_score_distributions(scores: dict, ground_truths_list, save_folder, class_name):
     ground_truths = np.stack(ground_truths_list, axis=0)

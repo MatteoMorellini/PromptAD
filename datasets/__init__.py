@@ -37,8 +37,7 @@ def get_dataloader_from_args(phase, **kwargs):
         seed = kwargs['seed'],
         distance_per_slice=kwargs['distance_per_slice'],
         inference = kwargs['inference'],
-        left_slice = kwargs['left_slice'],
-        right_slice = kwargs['right_slice']
+        shuffle = kwargs['shuffle']
     )
     
     if phase == 'train':

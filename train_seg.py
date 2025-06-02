@@ -18,42 +18,6 @@ TASK = 'SEG'
 
 import torch.nn.functional as F
 
-def compute_patchwise_cross_entropy(logits, target_v2t):
-    """
-    Calcola la cross-entropy per ciascuna patch.
-
-    Args:
-        logits (Tensor): forma (batch_size, num_classes, num_patches)
-        target_v2t (Tensor): forma (batch_size, num_patches), con valori interi tra 0 e num_classes-1
-
-    Returns:
-        Tensor: cross-entropy per ciascuna patch, forma (batch_size, num_patches)
-    """
-    # Verifica forme
-    assert logits.ndim == 3, f"logits deve avere 3 dimensioni, ricevuto {logits.shape}"
-    assert target_v2t.ndim == 2, f"target_v2t deve avere 2 dimensioni, ricevuto {target_v2t.shape}"
-    assert logits.shape[0] == target_v2t.shape[0], "Dimensione batch non corrisponde"
-    assert logits.shape[2] == target_v2t.shape[1], "Numero di patch non corrisponde"
-
-    # Trasformiamo logits per adattarsi a cross_entropy: (batch_size * num_patches, num_classes)
-    batch_size, num_classes, num_patches = logits.shape
-    logits = logits.permute(0, 2, 1).reshape(-1, num_classes)
-    targets = target_v2t.reshape(-1)
-
-    # Calcolo della cross-entropy
-    # loss è una lista di lunghezza batch_size x #patch
-    loss = F.cross_entropy(logits, targets, reduction='none')
-    print(f"shape before unrolling is {loss.shape}")
-    indice_massima = list(loss).index(max(list(loss)))
-    print(indice_massima)
-    print(f"foto nella batch nr {indice_massima // 225}")
-
-    #for i, row in enumerate(loss): 
-    #    print(i)
-
-    print(f"the maximum value in the CE is {loss.max()}")
-    print(f"the average of the CE is {loss.mean()}")
-    return loss
 
 def save_check_point(model, path):
     selected_keys = [
@@ -233,6 +197,10 @@ def main(args):
 
     if kwargs['seed'] is None:
         kwargs['seed'] = 111
+    else:
+        kwargs['shuffle'] = True
+
+    # TODO: unify seed and shuffle, 1 is redundant
 
     setup_seed(kwargs['seed'])
 
@@ -245,10 +213,10 @@ def main(args):
         kwargs['distance_per_slice'] = 0
 
     kwargs['inference'] = False
+    print(f"shuffle has value {kwargs['shuffle']}")
 
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
-    print(csv_path)
     # get the train dataloader
     train_dataloader, train_dataset_inst = get_dataloader_from_args(phase='train', perturbed=False, **kwargs)
     # get the test dataloader
@@ -323,8 +291,6 @@ def get_args():
     # loss hyper parameter
     parser.add_argument("--lambda1", type=float, default=0.001)
 
-    parser.add_argument("--left_slice", type=int, default=0)
-    parser.add_argument("--right_slice",  type=int, default=0)
     parser.add_argument('--checkpoint', type=bool, default=False)
 
 

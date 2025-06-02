@@ -25,22 +25,18 @@ def test(model,
     # change the model into eval mode
     model.eval_mode()
 
-    if args.checkpoint:
-        previous_checkpoint = './result/brainmri/k_-1/checkpoint/SEG-Seed_111-normal_brain-check_point.pt'
-        torch.load(previous_checkpoint)
-        model.load_state_dict(torch.load(previous_checkpoint), strict=False)
-    else:
-        torch.load(check_path)
-        model.load_state_dict(torch.load(check_path), strict=False)
+    torch.load(check_path)
+    model.load_state_dict(torch.load(check_path), strict=False)
 
-    score_maps = []
-    test_imgs = []
-    gt_list = []
-    gt_mask_list = []
-    names = []
-    image_scores = []
     with torch.no_grad():
         for (data, mask, label, name, img_type) in dataloader:
+            score_maps = []
+            test_imgs = []
+            gt_list = []
+            gt_mask_list = []
+            names = []
+            image_scores = []
+
             data = [model.transform(Image.fromarray(f.numpy())) for f in data]
             data = torch.stack(data, dim=0)
 
@@ -61,9 +57,9 @@ def test(model,
             else:
                 score_map = model(data, 'seg')
             score_maps += score_map
-    test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
-    if args.vis:
-        plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir, inference = True)
+            test_imgs, score_maps, gt_mask_list = specify_resolution(test_imgs, score_maps, gt_mask_list, resolution=(args.resolution, args.resolution))
+            if args.vis:
+                plot_sample_cv2(names, test_imgs, {'PromptAD': score_maps}, gt_mask_list, save_folder=img_dir, inference = True)
 
 
 
@@ -73,6 +69,8 @@ def main(args):
 
     if kwargs['seed'] is None:
         kwargs['seed'] = 222
+    else:
+        kwargs['shuffle'] = True
 
     setup_seed(kwargs['seed'])
 
@@ -87,28 +85,19 @@ def main(args):
     else:
         kwargs['distance_per_slice'] = 0
     
-    kwargs['inference'] = True
-
+    kwargs['inference'] = True        
+    
     # prepare the experiment dir
     img_dir, csv_path, check_path = get_dir_from_args(TASK, **kwargs)
-
-    # get the model
-    if kwargs['dataset'] == 'brainmri' and kwargs['class_name'] == 't2w':
-        kwargs['class_name'] = 'normal_brain'
-        brainmri_from_scratch = True
-    
+    print(f"img directory: {img_dir}\n checkpoint directory: {check_path}")
+    print(f"shuffle has value {kwargs['shuffle']}")
+    return
     kwargs['out_size_h'] = kwargs['resolution']
     kwargs['out_size_w'] = kwargs['resolution']
     model = PromptAD(**kwargs)
     model = model.to(device)
-
-    # get the test dataloader
-    if brainmri_from_scratch:
-        kwargs['dataset'] = 'brats'
-        kwargs['class_name'] = 't2w'
-        kwargs['distance_per_slice'] = 1
         
-    test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)
+    test_dataloader, test_dataset_inst = get_dataloader_from_args(phase='test', perturbed=False, **kwargs)    
     test(model, args, test_dataloader, device, img_dir=img_dir, check_path=check_path)
 
     #p_roc = round(metrics['p_roc'], 2)
@@ -134,7 +123,7 @@ def get_args():
 
     parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--vis', type=str2bool, choices=[True, False], default=True)
-    parser.add_argument("--root-dir", type=str, default="./result")
+    parser.add_argument("--root-dir", type=str, default="/mnt/external/PromptAD/masks")
     parser.add_argument("--load-memory", type=str2bool, default=True)
     parser.add_argument("--cal-pro", type=str2bool, default=False)
     parser.add_argument("--seed", type=int, default=111)
@@ -157,10 +146,7 @@ def get_args():
     parser.add_argument("--n_ctx_ab", type=int, default=1)
     parser.add_argument("--n_pro", type=int, default=1)
     parser.add_argument("--n_pro_ab", type=int, default=4)
-    parser.add_argument("--left_slice", type=int, default=0)
-    parser.add_argument("--right_slice",  type=int, default=20)
-
-    parser.add_argument("--checkpoint", type=bool, default = False)
+    parser.add_argument('--checkpoint', type=bool, default=False)
 
     args = parser.parse_args()
 
